@@ -185,7 +185,18 @@ function App() {
       .reduce((acc, exp) => acc + exp.amount, 0);
   }, [fixedExpenses, currentMonthName]);
 
-  const total = includeFixed ? totalExpenses + totalFixedExpensesThisMonth : totalExpenses;
+  // Sum of only the fixed expenses manually marked as paid this month
+  const totalFixedPaidThisMonth = useMemo(() => {
+    return fixedExpenses
+      .filter(exp =>
+        paidExpenses[exp.id] &&
+        (!exp.month || exp.month === 'Todos' || exp.month === currentMonthName)
+      )
+      .reduce((acc, exp) => acc + exp.amount, 0);
+  }, [fixedExpenses, paidExpenses, currentMonthName]);
+
+  // If switch ON → deduct all fixed. If switch OFF → only deduct the ones marked as paid.
+  const total = totalExpenses + (includeFixed ? totalFixedExpensesThisMonth : totalFixedPaidThisMonth);
   const remaining = budget - total;
 
   const hasFixedExpenseToday = useMemo(() => fixedExpenses.some(exp =>
