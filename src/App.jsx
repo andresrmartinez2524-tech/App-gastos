@@ -356,25 +356,22 @@ function App() {
             </p>
           ) : (
             expenses.map(exp => (
-              <div key={exp.id} className="expense-item" style={{ position: 'relative' }}>
-                <div className="expense-info-container">
-                  <div className="expense-info">
-                    <span className="expense-title">{exp.subcategory} {exp.description && `- ${exp.description}`}</span>
-                    <span className="expense-category">{exp.category} • {exp.date}</span>
-                  </div>
+              <div key={exp.id} className="expense-item">
+                <div className="expense-info">
+                  <span className="expense-title">{exp.subcategory}{exp.description ? ` - ${exp.description}` : ''}</span>
+                  <span className="expense-category">{exp.category} • {exp.date}</span>
                 </div>
-                <div className="expense-amount" style={{ paddingRight: '2rem' }}>
-                  ${exp.amount.toLocaleString()}
+                <div className="expense-right">
+                  <span className="expense-amount">${exp.amount.toLocaleString()}</span>
+                  <button
+                    type="button"
+                    className="del-btn"
+                    onClick={() => handleDeleteExpense(exp.id)}
+                    title="Eliminar gasto"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className="delete-btn"
-                  onClick={() => handleDeleteExpense(exp.id)}
-                  title="Eliminar gasto"
-                  style={{ top: '50%', transform: 'translateY(-50%)', right: '0.5rem' }}
-                >
-                  ✕
-                </button>
               </div>
             ))
           )}

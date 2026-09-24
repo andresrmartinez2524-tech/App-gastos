@@ -563,9 +563,10 @@ button:active {
 /* Expenses List */
 .expense-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 1.25rem;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border);
   transition: all 0.2s ease;
 }
@@ -580,32 +581,40 @@ button:active {
   border-bottom: none;
 }
 
-.expense-info-container {
-  display: flex;
-  align-items: center;
-  flex: 1;
-}
-
 .expense-info {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
 }
 
 .expense-title {
   font-weight: 700;
   color: var(--text-dark);
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .expense-category {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--text-light);
-  margin-top: 0.25rem;
+  margin-top: 0.2rem;
+}
+
+.expense-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .expense-amount {
   font-weight: 800;
   color: var(--accent);
-  font-size: 1.125rem;
+  font-size: 1rem;
+  white-space: nowrap;
 }
 
 /* Calendar Clock */
