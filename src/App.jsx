@@ -35,6 +35,16 @@ function App() {
     return localStorage.getItem('snoopy_include_fixed') === 'true';
   });
 
+  const [paidExpenses, setPaidExpenses] = useState(() => {
+    const saved = localStorage.getItem('snoopy_paid_expenses');
+    if (!saved) return {};
+    const { month, ids } = JSON.parse(saved);
+    const currentKey = `${new Date().getFullYear()}-${new Date().getMonth()}`;
+    // Auto-reset if we're in a new month
+    if (month !== currentKey) return {};
+    return ids;
+  });
+
   const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
   const [recentExpenseAnim, setRecentExpenseAnim] = useState(false);
@@ -139,7 +149,36 @@ function App() {
 
   const totalExpenses = useMemo(() => expenses.reduce((acc, exp) => acc + exp.amount, 0), [expenses]);
 
+  const currentMonthKey = `${time.getFullYear()}-${time.getMonth()}`;
   const currentMonthName = MONTHS[time.getMonth()];
+
+  // Save paidExpenses to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('snoopy_paid_expenses', JSON.stringify({ month: currentMonthKey, ids: paidExpenses }));
+  }, [paidExpenses, currentMonthKey]);
+
+  // Auto-reset paid expenses when month changes
+  useEffect(() => {
+    const saved = localStorage.getItem('snoopy_paid_expenses');
+    if (saved) {
+      const { month } = JSON.parse(saved);
+      if (month !== currentMonthKey) {
+        setPaidExpenses({});
+      }
+    }
+  }, [currentMonthKey]);
+
+  const handleMarkPaid = (id) => {
+    setPaidExpenses(prev => {
+      const updated = { ...prev };
+      if (updated[id]) {
+        delete updated[id]; // toggle off
+      } else {
+        updated[id] = true;
+      }
+      return updated;
+    });
+  };
   const totalFixedExpensesThisMonth = useMemo(() => {
     return fixedExpenses
       .filter(exp => !exp.month || exp.month === 'Todos' || exp.month === currentMonthName)
@@ -378,9 +417,10 @@ function App() {
           <h3 style={{ fontSize: '1rem', color: 'var(--text-dark)', marginBottom: '1rem' }}>Gastos Fijos Programados</h3>
           <div className="custom-scrollbar" style={{ maxHeight: '360px', overflowY: 'auto', marginBottom: '1rem', padding: '10px 15px 10px 5px', margin: '-10px -15px 0 -5px' }}>
             {fixedExpenses.map(exp => {
-              const isToday = exp.day === today && (!exp.month || exp.month === 'Todos' || exp.month === MONTHS[time.getMonth()]);
+              const isToday = exp.day === today && (!exp.month || exp.month === 'Todos' || exp.month === currentMonthName);
+              const isPaid = !!paidExpenses[exp.id];
               return (
-                <div key={exp.id} className={`fixed-expense-item ${isToday ? 'active' : ''}`}>
+                <div key={exp.id} className={`fixed-expense-item ${isToday ? 'active' : ''} ${isPaid ? 'paid' : ''}`}>
                   <div className="calendar-day">
                     {exp.day}
                     {exp.month && exp.month !== 'Todos' && <div style={{ fontSize: '0.6rem', lineHeight: '1', marginTop: '2px' }}>{exp.month.substring(0, 3)}</div>}
@@ -388,16 +428,30 @@ function App() {
                   <div className="fixed-expense-info">
                     <div className="fixed-expense-title">{exp.title}</div>
                     <div className="fixed-expense-amount">${exp.amount.toLocaleString()}</div>
-                    {isToday && <span className="tag-urgent">PAGAR HOY</span>}
+                    {isPaid
+                      ? <span className="tag-paid">✅ Pagado este mes</span>
+                      : isToday && <span className="tag-urgent">PAGAR HOY</span>
+                    }
                   </div>
-                  <button
-                    type="button"
-                    className="delete-btn"
-                    onClick={() => handleDeleteFixedExpense(exp.id)}
-                    title="Eliminar gasto fijo"
-                  >
-                    ✕
-                  </button>
+                  <div className="fixed-expense-actions">
+                    <button
+                      type="button"
+                      className={`paid-btn ${isPaid ? 'is-paid' : ''}`}
+                      onClick={() => handleMarkPaid(exp.id)}
+                      title={isPaid ? 'Marcar como no pagado' : 'Marcar como pagado este mes'}
+                    >
+                      {isPaid ? '✓' : '$'}
+                    </button>
+                    <button
+                      type="button"
+                      className="delete-btn"
+                      onClick={() => handleDeleteFixedExpense(exp.id)}
+                      title="Eliminar gasto fijo"
+                      style={{ position: 'static', opacity: 1, transform: 'none', boxShadow: 'none', background: 'transparent', width: '28px', height: '28px', padding: 0, margin: 0, minWidth: 'unset', fontSize: '0.75rem', color: 'var(--text-light)' }}
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
               )
             })}
