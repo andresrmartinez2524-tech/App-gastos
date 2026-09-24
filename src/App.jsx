@@ -53,11 +53,11 @@ function App() {
         setBudget(budgetData.amount);
         if (budgetData.amount > 0) setIsEditingBudget(false);
       }
-      
+
       // Cargar gastos
       const { data: expData } = await supabase.from('expenses').select('*').order('id', { ascending: false });
       if (expData) setExpenses(expData);
-      
+
       // Cargar gastos fijos
       const { data: fixedData } = await supabase.from('fixed_expenses').select('*').order('day', { ascending: true });
       if (fixedData) setFixedExpenses(fixedData);
@@ -95,7 +95,7 @@ function App() {
 
     setExpenses([newExpense, ...expenses]);
     supabase.from('expenses').insert([newExpense]).then();
-    
+
     setAmount('');
     setDescription('');
 
@@ -120,7 +120,7 @@ function App() {
 
     setFixedExpenses(prev => [...prev, newFixed].sort((a, b) => a.day - b.day));
     supabase.from('fixed_expenses').insert([newFixed]).then();
-    
+
     setFixedTitle('');
     setFixedAmount('');
     setFixedDay(1);
@@ -138,7 +138,7 @@ function App() {
   };
 
   const totalExpenses = useMemo(() => expenses.reduce((acc, exp) => acc + exp.amount, 0), [expenses]);
-  
+
   const currentMonthName = MONTHS[time.getMonth()];
   const totalFixedExpensesThisMonth = useMemo(() => {
     return fixedExpenses
@@ -149,7 +149,7 @@ function App() {
   const total = includeFixed ? totalExpenses + totalFixedExpensesThisMonth : totalExpenses;
   const remaining = budget - total;
 
-  const hasFixedExpenseToday = useMemo(() => fixedExpenses.some(exp => 
+  const hasFixedExpenseToday = useMemo(() => fixedExpenses.some(exp =>
     exp.day === today && (!exp.month || exp.month === 'Todos' || exp.month === currentMonthName)
   ), [fixedExpenses, today, currentMonthName]);
 
@@ -181,7 +181,7 @@ function App() {
               </svg>
               Mi Billetera
             </h2>
-            
+
             <div className="toggle-switch-container">
               <span className="toggle-label">
                 Restar Gastos Fijos
@@ -192,7 +192,7 @@ function App() {
               </label>
             </div>
           </div>
-          
+
           {isEditingBudget ? (
             <div className="budget-input">
               <input
@@ -350,7 +350,7 @@ function App() {
         </div>
 
         <div className="card">
-          <h2>Calendario en Vivo</h2>
+          <h2>Calendario</h2>
 
           <div className="clock-container">
             <div className="clock-time">{timeString}</div>
@@ -362,26 +362,27 @@ function App() {
             {fixedExpenses.map(exp => {
               const isToday = exp.day === today && (!exp.month || exp.month === 'Todos' || exp.month === MONTHS[time.getMonth()]);
               return (
-              <div key={exp.id} className={`fixed-expense-item ${isToday ? 'active' : ''}`}>
-                <div className="calendar-day">
-                  {exp.day}
-                  {exp.month && exp.month !== 'Todos' && <div style={{fontSize: '0.6rem', lineHeight: '1', marginTop: '2px'}}>{exp.month.substring(0,3)}</div>}
+                <div key={exp.id} className={`fixed-expense-item ${isToday ? 'active' : ''}`}>
+                  <div className="calendar-day">
+                    {exp.day}
+                    {exp.month && exp.month !== 'Todos' && <div style={{ fontSize: '0.6rem', lineHeight: '1', marginTop: '2px' }}>{exp.month.substring(0, 3)}</div>}
+                  </div>
+                  <div className="fixed-expense-info">
+                    <div className="fixed-expense-title">{exp.title}</div>
+                    <div className="fixed-expense-amount">${exp.amount.toLocaleString()}</div>
+                    {isToday && <span className="tag-urgent">PAGAR HOY</span>}
+                  </div>
+                  <button
+                    type="button"
+                    className="delete-btn"
+                    onClick={() => handleDeleteFixedExpense(exp.id)}
+                    title="Eliminar gasto fijo"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <div className="fixed-expense-info">
-                  <div className="fixed-expense-title">{exp.title}</div>
-                  <div className="fixed-expense-amount">${exp.amount.toLocaleString()}</div>
-                  {isToday && <span className="tag-urgent">PAGAR HOY</span>}
-                </div>
-                <button
-                  type="button"
-                  className="delete-btn"
-                  onClick={() => handleDeleteFixedExpense(exp.id)}
-                  title="Eliminar gasto fijo"
-                >
-                  ✕
-                </button>
-              </div>
-            )})}
+              )
+            })}
             <div style={{ height: '15px' }}></div>
           </div>
 
@@ -402,8 +403,8 @@ function App() {
               </div>
               <div style={{ flex: '1 1 40%' }}>
                 <label style={{ fontSize: '0.75rem' }}>Mes</label>
-                <select 
-                  value={fixedMonth} 
+                <select
+                  value={fixedMonth}
                   onChange={(e) => setFixedMonth(e.target.value)}
                 >
                   <option value="Todos">Todos</option>
