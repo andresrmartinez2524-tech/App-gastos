@@ -18,6 +18,58 @@ import { supabase } from './supabaseClient';
 function App() {
   const [budget, setBudget] = useState(0);
   const [isEditingBudget, setIsEditingBudget] = useState(true);
+  const [isAddingMoney, setIsAddingMoney] = useState(false);
+  const [addAmount, setAddAmount] = useState('');
+
+  const handleAddMoney = () => {
+    if (!addAmount || isNaN(addAmount)) {
+      setIsAddingMoney(false);
+      return;
+    }
+    const newBudget = budget + parseFloat(addAmount);
+    setBudget(newBudget);
+    supabase.from('budget').upsert({ id: 1, amount: newBudget }).then();
+    setAddAmount('');
+    setIsAddingMoney(false);
+  };
+
+  const [debts, setDebts] = useState(() => {
+    const saved = localStorage.getItem('snoopy_debts');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [newDebtName, setNewDebtName] = useState('');
+  const [newDebtAmount, setNewDebtAmount] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem('snoopy_debts', JSON.stringify(debts));
+  }, [debts]);
+
+  const handleAddDebt = (e) => {
+    e.preventDefault();
+    if (!newDebtName || !newDebtAmount) return;
+    const newDebt = {
+      id: Date.now().toString(),
+      name: newDebtName,
+      amount: parseFloat(newDebtAmount),
+      isPaid: false
+    };
+    setDebts([...debts, newDebt]);
+    setNewDebtName('');
+    setNewDebtAmount('');
+  };
+
+  const handlePayDebt = (id) => {
+    const debt = debts.find(d => d.id === id);
+    if (!debt || debt.isPaid) return;
+    const newBudget = budget + debt.amount;
+    setBudget(newBudget);
+    supabase.from('budget').upsert({ id: 1, amount: newBudget }).then();
+    setDebts(debts.map(d => d.id === id ? { ...d, isPaid: true } : d));
+  };
+
+  const handleDeleteDebt = (id) => {
+    setDebts(debts.filter(d => d.id !== id));
+  };
 
   const [expenses, setExpenses] = useState([]);
   const [amount, setAmount] = useState('');
@@ -259,10 +311,36 @@ function App() {
             </div>
           ) : (
             <div className="budget-display">
-              <div className="budget-item">
-                <span>Presupuesto Inicial</span>
-                <span>${budget.toLocaleString()}</span>
-              </div>
+              {isAddingMoney ? (
+                <div className="budget-item add-money-active">
+                  <span className="add-money-label">SUMAR AL SALDO</span>
+                  <div className="add-money-input-wrapper">
+                    <span className="currency-symbol">$</span>
+                    <input
+                      type="number"
+                      value={addAmount}
+                      onChange={(e) => setAddAmount(e.target.value)}
+                      placeholder="Monto"
+                      autoFocus
+                      className="add-money-input"
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddMoney()}
+                    />
+                    <button onClick={handleAddMoney} className="add-money-submit">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="budget-item add-money-btn" onClick={() => setIsAddingMoney(true)}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.9 }}>
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  <span>Agregar Dinero</span>
+                </div>
+              )}
               <div className="budget-item">
                 <span>Gastos Fijos (Mes)</span>
                 <span>${totalFixedExpensesThisMonth.toLocaleString()}</span>
@@ -514,6 +592,82 @@ function App() {
             <button type="submit" className="btn-secondary">
               + Añadir Gasto
             </button>
+          </form>
+        </div>
+
+        <div className="card">
+          <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '1.5rem' }}></span>Gente que me debe
+          </h2>
+
+          <div className="custom-scrollbar" style={{ maxHeight: '300px', overflowY: 'auto', marginBottom: '1.5rem', padding: '10px 15px 10px 5px', margin: '-10px -15px 1.5rem -5px' }}>
+            {debts.length === 0 ? (
+              <p style={{ color: 'var(--text-light)', textAlign: 'center', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                Nadie te debe dinero amocito.
+              </p>
+            ) : (
+              debts.map(debt => (
+                <div key={debt.id} className={`fixed-expense-item ${debt.isPaid ? 'paid' : ''}`}>
+                  <div className="fixed-expense-info">
+                    <div className="fixed-expense-title" style={{ textDecoration: debt.isPaid ? 'line-through' : 'none', opacity: debt.isPaid ? 0.6 : 1 }}>
+                      {debt.name}
+                    </div>
+                    <div className="fixed-expense-amount" style={{ color: debt.isPaid ? 'var(--text-light)' : 'var(--accent)' }}>
+                      ${debt.amount.toLocaleString()}
+                    </div>
+                    {debt.isPaid && <span className="tag-paid" style={{ marginTop: '0.25rem' }}>♥ Cobrado</span>}
+                  </div>
+                  <div className="fixed-expense-actions">
+                    {!debt.isPaid && (
+                      <button
+                        type="button"
+                        className="btn-cobrar"
+                        onClick={() => handlePayDebt(debt.id)}
+                        title="Marcar como pagado y sumar al saldo"
+                      >
+                        Cobrar
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="del-btn"
+                      onClick={() => handleDeleteDebt(debt.id)}
+                      title="Eliminar de la lista"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <form onSubmit={handleAddDebt}>
+            <div className="form-group">
+              <input
+                type="text"
+                value={newDebtName}
+                onChange={(e) => setNewDebtName(e.target.value)}
+                placeholder="Nombre (Amocito)"
+                required
+              />
+            </div>
+            <div className="form-group" style={{ display: 'flex', gap: '0.5rem' }}>
+              <input
+                type="number"
+                value={newDebtAmount}
+                onChange={(e) => setNewDebtAmount(e.target.value)}
+                placeholder="Dinerito que te deben"
+                style={{ flex: 1 }}
+                required
+              />
+              <button type="submit" className="btn-add-debt">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+            </div>
           </form>
         </div>
       </div>
