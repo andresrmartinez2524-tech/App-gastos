@@ -342,6 +342,24 @@ function App() {
               alt="Snoopy"
               className="snoopy-image"
             />
+
+            {/* Floating hearts when happy */}
+            {!isAngry && (
+              <div className="hearts-container">
+                <span className="heart h1">💗</span>
+                <span className="heart h2">💖</span>
+                <span className="heart h3">💕</span>
+                <span className="heart h4">💓</span>
+                <span className="heart h5">💝</span>
+              </div>
+            )}
+
+            {/* Broken heart when angry */}
+            {isAngry && (
+              <div className="broken-heart-container">
+                <span className="broken-heart">💔</span>
+              </div>
+            )}
           </div>
 
           <div className={`status-badge ${isAngry ? 'angry' : 'happy'}`}>
