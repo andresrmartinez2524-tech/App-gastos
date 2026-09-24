@@ -200,8 +200,8 @@ function App() {
   const remaining = budget - total;
 
   const hasFixedExpenseToday = useMemo(() => fixedExpenses.some(exp =>
-    exp.day === today && (!exp.month || exp.month === 'Todos' || exp.month === currentMonthName)
-  ), [fixedExpenses, today, currentMonthName]);
+    exp.day === today && (!exp.month || exp.month === 'Todos' || exp.month === currentMonthName) && !paidExpenses[exp.id]
+  ), [fixedExpenses, today, currentMonthName, paidExpenses]);
 
   let currentImg = '/snoopy_happy.png';
   let currentMsg = 'Snoopy está feliz.';
