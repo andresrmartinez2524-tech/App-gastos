@@ -433,14 +433,14 @@ function App() {
               return (
                 <div key={exp.id} className={`fixed-expense-item ${isToday ? 'active' : ''} ${isPaid ? 'paid' : ''}`}>
                   <div className="calendar-day">
-                    {exp.day}
-                    {exp.month && exp.month !== 'Todos' && <div style={{ fontSize: '0.6rem', lineHeight: '1', marginTop: '2px' }}>{exp.month.substring(0, 3)}</div>}
+                    <span className="calendar-day-num">{exp.day}</span>
+                    {exp.month && exp.month !== 'Todos' && <span className="calendar-day-month">{exp.month.substring(0, 3)}</span>}
                   </div>
                   <div className="fixed-expense-info">
                     <div className="fixed-expense-title">{exp.title}</div>
                     <div className="fixed-expense-amount">${exp.amount.toLocaleString()}</div>
                     {isPaid
-                      ? <span className="tag-paid">✅ Pagado este mes</span>
+                      ? <span className="tag-paid">♥ Pagado</span>
                       : isToday && <span className="tag-urgent">PAGAR HOY</span>
                     }
                   </div>
@@ -449,16 +449,15 @@ function App() {
                       type="button"
                       className={`paid-btn ${isPaid ? 'is-paid' : ''}`}
                       onClick={() => handleMarkPaid(exp.id)}
-                      title={isPaid ? 'Marcar como no pagado' : 'Marcar como pagado este mes'}
+                      title={isPaid ? 'Desmarcar' : 'Marcar como pagado'}
                     >
                       {isPaid ? '✓' : '$'}
                     </button>
                     <button
                       type="button"
-                      className="delete-btn"
+                      className="del-btn"
                       onClick={() => handleDeleteFixedExpense(exp.id)}
-                      title="Eliminar gasto fijo"
-                      style={{ position: 'static', opacity: 1, transform: 'none', boxShadow: 'none', background: 'transparent', width: '28px', height: '28px', padding: 0, margin: 0, minWidth: 'unset', fontSize: '0.75rem', color: 'var(--text-light)' }}
+                      title="Eliminar"
                     >
                       ✕
                     </button>
