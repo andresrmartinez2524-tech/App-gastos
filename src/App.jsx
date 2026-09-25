@@ -33,18 +33,11 @@ function App() {
     setIsAddingMoney(false);
   };
 
-  const [debts, setDebts] = useState(() => {
-    const saved = localStorage.getItem('snoopy_debts');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [debts, setDebts] = useState([]);
   const [newDebtName, setNewDebtName] = useState('');
   const [newDebtAmount, setNewDebtAmount] = useState('');
 
-  useEffect(() => {
-    localStorage.setItem('snoopy_debts', JSON.stringify(debts));
-  }, [debts]);
-
-  const handleAddDebt = (e) => {
+  const handleAddDebt = async (e) => {
     e.preventDefault();
     if (!newDebtName || !newDebtAmount) return;
     const newDebt = {
@@ -56,19 +49,23 @@ function App() {
     setDebts([...debts, newDebt]);
     setNewDebtName('');
     setNewDebtAmount('');
+    await supabase.from('debts').insert([newDebt]);
   };
 
-  const handlePayDebt = (id) => {
+  const handlePayDebt = async (id) => {
     const debt = debts.find(d => d.id === id);
     if (!debt || debt.isPaid) return;
     const newBudget = budget + debt.amount;
     setBudget(newBudget);
-    supabase.from('budget').upsert({ id: 1, amount: newBudget }).then();
     setDebts(debts.map(d => d.id === id ? { ...d, isPaid: true } : d));
+    
+    await supabase.from('budget').upsert({ id: 1, amount: newBudget });
+    await supabase.from('debts').update({ isPaid: true }).eq('id', id);
   };
 
-  const handleDeleteDebt = (id) => {
+  const handleDeleteDebt = async (id) => {
     setDebts(debts.filter(d => d.id !== id));
+    await supabase.from('debts').delete().eq('id', id);
   };
 
   const [expenses, setExpenses] = useState([]);
@@ -123,6 +120,10 @@ function App() {
       // Cargar gastos fijos
       const { data: fixedData } = await supabase.from('fixed_expenses').select('*').order('day', { ascending: true });
       if (fixedData) setFixedExpenses(fixedData);
+
+      // Cargar deudas
+      const { data: debtsData } = await supabase.from('debts').select('*').order('id', { ascending: true });
+      if (debtsData) setDebts(debtsData);
     }
     fetchSupabaseData();
   }, []);
