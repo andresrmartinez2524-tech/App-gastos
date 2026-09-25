@@ -717,8 +717,8 @@ button:active {
 }
 
 .status-badge.sleeping {
-  background: #2c3e50;
-  color: #ecf0f1;
+  background: var(--primary-gradient);
+  color: white;
 }
 
 /* ZZZ Animation */
