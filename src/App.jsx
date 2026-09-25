@@ -276,8 +276,14 @@ function App() {
   let currentImg = '/snoopy_happy.png';
   let currentMsg = 'Snoopy está feliz.';
   let isAngry = false;
+  let isSleeping = false;
+  const currentHour = time.getHours();
 
-  if (recentExpenseAnim) {
+  if (currentHour >= 22 || currentHour < 6) {
+    currentImg = '/snoopy_sleeping.jpg';
+    currentMsg = 'Ta muy tarde, dejame mimir';
+    isSleeping = true;
+  } else if (recentExpenseAnim) {
     currentImg = '/snoopy_angry.png';
     currentMsg = '¡AMOCITOOO ESTÁS GASTANDO MUCHO!';
     isAngry = true;
@@ -487,7 +493,7 @@ function App() {
             />
 
             {/* Floating hearts when happy */}
-            {!isAngry && (
+            {!isAngry && !isSleeping && (
               <div className="hearts-container">
                 <span className="heart h1">💗</span>
                 <span className="heart h2">💖</span>
@@ -498,14 +504,23 @@ function App() {
             )}
 
             {/* Broken heart when angry */}
-            {isAngry && (
+            {isAngry && !isSleeping && (
               <div className="broken-heart-container">
                 <span className="broken-heart">💔</span>
               </div>
             )}
+
+            {/* ZZZ when sleeping */}
+            {isSleeping && (
+              <div className="zzz-container">
+                <span className="zzz z1">Z</span>
+                <span className="zzz z2">z</span>
+                <span className="zzz z3">Z</span>
+              </div>
+            )}
           </div>
 
-          <div className={`status-badge ${isAngry ? 'angry' : 'happy'}`}>
+          <div className={`status-badge ${isAngry ? 'angry' : isSleeping ? 'sleeping' : 'happy'}`}>
             {currentMsg}
           </div>
         </div>

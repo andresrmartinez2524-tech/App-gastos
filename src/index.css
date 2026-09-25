@@ -716,6 +716,42 @@ button:active {
   color: white;
 }
 
+.status-badge.sleeping {
+  background: #2c3e50;
+  color: #ecf0f1;
+}
+
+/* ZZZ Animation */
+.zzz-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 3;
+}
+
+@keyframes floatZzz {
+  0%   { transform: translate(0, 0) scale(0.8); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 0.8; }
+  100% { transform: translate(20px, -80px) scale(1.2); opacity: 0; }
+}
+
+.zzz {
+  position: absolute;
+  font-weight: 800;
+  color: #34495e;
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+  animation: floatZzz 3s ease-in-out infinite;
+  text-shadow: 2px 2px 0px white;
+}
+
+.z1 { right: 20%; top: 30%; font-size: 2rem; animation-delay: 0s; animation-duration: 3s; }
+.z2 { right: 10%; top: 15%; font-size: 1.2rem; animation-delay: 0.8s; animation-duration: 3.5s; }
+.z3 { right: 30%; top: 5%; font-size: 1.5rem; animation-delay: 1.5s; animation-duration: 2.8s; }
+
 /* Expenses List */
 .expense-item {
   display: flex;
