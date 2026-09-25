@@ -41,10 +41,10 @@ function App() {
     e.preventDefault();
     if (!newDebtName || !newDebtAmount) return;
     const newDebt = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       name: newDebtName,
       amount: parseFloat(newDebtAmount),
-      isPaid: false
+      is_paid: false
     };
     setDebts([...debts, newDebt]);
     setNewDebtName('');
@@ -54,13 +54,13 @@ function App() {
 
   const handlePayDebt = async (id) => {
     const debt = debts.find(d => d.id === id);
-    if (!debt || debt.isPaid) return;
+    if (!debt || debt.is_paid) return;
     const newBudget = budget + debt.amount;
     setBudget(newBudget);
-    setDebts(debts.map(d => d.id === id ? { ...d, isPaid: true } : d));
+    setDebts(debts.map(d => d.id === id ? { ...d, is_paid: true } : d));
     
     await supabase.from('budget').upsert({ id: 1, amount: newBudget });
-    await supabase.from('debts').update({ isPaid: true }).eq('id', id);
+    await supabase.from('debts').update({ is_paid: true }).eq('id', id);
   };
 
   const handleDeleteDebt = async (id) => {
@@ -608,18 +608,18 @@ function App() {
               </p>
             ) : (
               debts.map(debt => (
-                <div key={debt.id} className={`fixed-expense-item ${debt.isPaid ? 'paid' : ''}`}>
+                <div key={debt.id} className={`fixed-expense-item ${debt.is_paid ? 'paid' : ''}`}>
                   <div className="fixed-expense-info">
-                    <div className="fixed-expense-title" style={{ textDecoration: debt.isPaid ? 'line-through' : 'none', opacity: debt.isPaid ? 0.6 : 1 }}>
+                    <div className="fixed-expense-title" style={{ textDecoration: debt.is_paid ? 'line-through' : 'none', opacity: debt.is_paid ? 0.6 : 1 }}>
                       {debt.name}
                     </div>
-                    <div className="fixed-expense-amount" style={{ color: debt.isPaid ? 'var(--text-light)' : 'var(--accent)' }}>
+                    <div className="fixed-expense-amount" style={{ color: debt.is_paid ? 'var(--text-light)' : 'var(--accent)' }}>
                       ${debt.amount.toLocaleString()}
                     </div>
-                    {debt.isPaid && <span className="tag-paid" style={{ marginTop: '0.25rem' }}>♥ Cobrado</span>}
+                    {debt.is_paid && <span className="tag-paid" style={{ marginTop: '0.25rem' }}>♥ Cobrado</span>}
                   </div>
                   <div className="fixed-expense-actions">
-                    {!debt.isPaid && (
+                    {!debt.is_paid && (
                       <button
                         type="button"
                         className="btn-cobrar"
