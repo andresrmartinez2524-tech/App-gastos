@@ -741,11 +741,11 @@ button:active {
 
 .zzz {
   position: absolute;
+  font-family: 'Inter', sans-serif;
   font-weight: 800;
-  color: #34495e;
-  font-family: 'Comic Sans MS', cursive, sans-serif;
+  color: #64b5f6;
+  -webkit-text-stroke: 1.5px #2c3e50;
   animation: floatZzz 3s ease-in-out infinite;
-  text-shadow: 2px 2px 0px white;
 }
 
 .z1 { right: 20%; top: 30%; font-size: 2rem; animation-delay: 0s; animation-duration: 3s; }

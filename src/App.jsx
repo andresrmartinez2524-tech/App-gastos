@@ -104,6 +104,7 @@ function App() {
   }, [paidFixedRecords, currentMonthKey]);
 
   const [recentExpenseAnim, setRecentExpenseAnim] = useState(false);
+  const [wokenUp, setWokenUp] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('snoopy_include_fixed', includeFixed);
@@ -277,12 +278,23 @@ function App() {
   let currentMsg = 'Snoopy está feliz.';
   let isAngry = false;
   let isSleeping = false;
+  let isMorning = false;
   const currentHour = time.getHours();
 
-  if (currentHour >= 22 || currentHour < 6) {
-    currentImg = '/snoopy_sleeping.jpg';
-    currentMsg = 'Ta muy tarde, dejame mimir';
-    isSleeping = true;
+  if (currentHour >= 22 || currentHour < 8) {
+    if (wokenUp) {
+      currentImg = '/nolodejandormir.jpg';
+      currentMsg = 'DEJAME MIMIRRRR';
+      isAngry = true;
+    } else {
+      currentImg = '/snoopy_sleeping.jpg';
+      currentMsg = 'Ta muy tarde, dejame mimir';
+      isSleeping = true;
+    }
+  } else if (currentHour >= 8 && currentHour < 10) {
+    currentImg = '/Amaneciendo.jpg';
+    currentMsg = '¡Buenos días amocito!';
+    isMorning = true;
   } else if (recentExpenseAnim) {
     currentImg = '/snoopy_angry.png';
     currentMsg = '¡AMOCITOOO ESTÁS GASTANDO MUCHO!';
@@ -292,6 +304,13 @@ function App() {
     currentMsg = 'Amocito tienes gastos por pagar.';
     isAngry = true;
   }
+
+  const handleSnoopyClick = () => {
+    if (isSleeping && !wokenUp) {
+      setWokenUp(true);
+      setTimeout(() => setWokenUp(false), 5000);
+    }
+  };
 
   return (
     <div className="container">
@@ -484,16 +503,16 @@ function App() {
         <div className="card snoopy-container">
           <h2>Estado Actual</h2>
 
-          <div className="snoopy-circle-bg">
+          <div className="snoopy-circle-bg" onClick={handleSnoopyClick} style={{ cursor: isSleeping ? 'pointer' : 'default' }}>
             <img
-              key={isAngry ? 'angry' : 'happy'}
+              key={currentImg}
               src={currentImg}
               alt="Snoopy"
               className="snoopy-image"
             />
 
             {/* Floating hearts when happy */}
-            {!isAngry && !isSleeping && (
+            {!isAngry && !isSleeping && !isMorning && (
               <div className="hearts-container">
                 <span className="heart h1">💗</span>
                 <span className="heart h2">💖</span>
@@ -503,10 +522,28 @@ function App() {
               </div>
             )}
 
-            {/* Broken heart when angry */}
-            {isAngry && !isSleeping && (
+            {/* Floating suns when morning */}
+            {!isAngry && !isSleeping && isMorning && (
+              <div className="zzz-container">
+                <span className="zzz z1">☀️</span>
+                <span className="zzz z2">🌞</span>
+                <span className="zzz z3">☀️</span>
+              </div>
+            )}
+
+            {/* Broken heart when angry (not woken up) */}
+            {isAngry && !wokenUp && (
               <div className="broken-heart-container">
                 <span className="broken-heart">💔</span>
+              </div>
+            )}
+
+            {/* Angry faces when woken up */}
+            {isAngry && wokenUp && (
+              <div className="zzz-container">
+                <span className="zzz z1">🤬</span>
+                <span className="zzz z2">😡</span>
+                <span className="zzz z3">😤</span>
               </div>
             )}
 
@@ -514,7 +551,7 @@ function App() {
             {isSleeping && (
               <div className="zzz-container">
                 <span className="zzz z1">Z</span>
-                <span className="zzz z2">z</span>
+                <span className="zzz z2">Z</span>
                 <span className="zzz z3">Z</span>
               </div>
             )}
