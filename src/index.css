@@ -58,6 +58,14 @@ body {
     gap: 1.25rem;
     width: 100%;
   }
+  
+  .sidebar {
+    display: contents;
+  }
+  
+  .snoopy-container {
+    order: -1;
+  }
 }
 
 .card {
