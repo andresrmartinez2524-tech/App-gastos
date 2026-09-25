@@ -84,21 +84,26 @@ function App() {
     return localStorage.getItem('snoopy_include_fixed') === 'true';
   });
 
-  const [paidExpenses, setPaidExpenses] = useState(() => {
-    const saved = localStorage.getItem('snoopy_paid_expenses');
-    if (!saved) return {};
-    const { month, ids } = JSON.parse(saved);
-    const currentKey = `${new Date().getFullYear()}-${new Date().getMonth()}`;
-    // Auto-reset if we're in a new month
-    if (month !== currentKey) return {};
-    return ids;
-  });
-
   const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-  const [recentExpenseAnim, setRecentExpenseAnim] = useState(false);
-
   const [time, setTime] = useState(new Date());
+
+  const [paidFixedRecords, setPaidFixedRecords] = useState([]);
+  
+  const currentMonthKey = `${time.getFullYear()}-${time.getMonth()}`;
+  const currentMonthName = MONTHS[time.getMonth()];
+
+  const paidExpensesThisMonth = useMemo(() => {
+    const map = {};
+    paidFixedRecords.forEach(record => {
+      if (record.month_key === currentMonthKey) {
+        map[record.fixed_expense_id] = record;
+      }
+    });
+    return map;
+  }, [paidFixedRecords, currentMonthKey]);
+
+  const [recentExpenseAnim, setRecentExpenseAnim] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('snoopy_include_fixed', includeFixed);
@@ -124,6 +129,10 @@ function App() {
       // Cargar deudas
       const { data: debtsData } = await supabase.from('debts').select('*').order('id', { ascending: true });
       if (debtsData) setDebts(debtsData);
+
+      // Cargar pagos de fijos
+      const { data: paidFixedData } = await supabase.from('paid_fixed_expenses').select('*');
+      if (paidFixedData) setPaidFixedRecords(paidFixedData);
     }
     fetchSupabaseData();
   }, []);
@@ -202,35 +211,43 @@ function App() {
 
   const totalExpenses = useMemo(() => expenses.reduce((acc, exp) => acc + exp.amount, 0), [expenses]);
 
-  const currentMonthKey = `${time.getFullYear()}-${time.getMonth()}`;
-  const currentMonthName = MONTHS[time.getMonth()];
+  const handleMarkPaid = async (fixedId) => {
+    const existingRecord = paidExpensesThisMonth[fixedId];
+    
+    if (existingRecord) {
+      // Desmarcar
+      await supabase.from('expenses').delete().eq('id', existingRecord.expense_id);
+      setExpenses(prev => prev.filter(e => e.id !== existingRecord.expense_id));
+      
+      await supabase.from('paid_fixed_expenses').delete().eq('id', existingRecord.id);
+      setPaidFixedRecords(prev => prev.filter(r => r.id !== existingRecord.id));
+    } else {
+      // Marcar como pagado
+      const fixedExp = fixedExpenses.find(f => f.id === fixedId);
+      if (!fixedExp) return;
 
-  // Save paidExpenses to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('snoopy_paid_expenses', JSON.stringify({ month: currentMonthKey, ids: paidExpenses }));
-  }, [paidExpenses, currentMonthKey]);
+      const newExpense = {
+        id: Date.now(),
+        amount: fixedExp.amount,
+        category: 'Hogar',
+        subcategory: fixedExp.title,
+        description: 'Gasto fijo automático',
+        date: new Date().toLocaleDateString('es-ES')
+      };
+      
+      const newPaidRecord = {
+        id: crypto.randomUUID(),
+        month_key: currentMonthKey,
+        fixed_expense_id: fixedId,
+        expense_id: newExpense.id
+      };
 
-  // Auto-reset paid expenses when month changes
-  useEffect(() => {
-    const saved = localStorage.getItem('snoopy_paid_expenses');
-    if (saved) {
-      const { month } = JSON.parse(saved);
-      if (month !== currentMonthKey) {
-        setPaidExpenses({});
-      }
+      setExpenses(prev => [newExpense, ...prev]);
+      setPaidFixedRecords(prev => [...prev, newPaidRecord]);
+
+      await supabase.from('expenses').insert([newExpense]);
+      await supabase.from('paid_fixed_expenses').insert([newPaidRecord]);
     }
-  }, [currentMonthKey]);
-
-  const handleMarkPaid = (id) => {
-    setPaidExpenses(prev => {
-      const updated = { ...prev };
-      if (updated[id]) {
-        delete updated[id]; // toggle off
-      } else {
-        updated[id] = true;
-      }
-      return updated;
-    });
   };
   const totalFixedExpensesThisMonth = useMemo(() => {
     return fixedExpenses
@@ -242,19 +259,19 @@ function App() {
   const totalFixedPaidThisMonth = useMemo(() => {
     return fixedExpenses
       .filter(exp =>
-        paidExpenses[exp.id] &&
+        paidExpensesThisMonth[exp.id] &&
         (!exp.month || exp.month === 'Todos' || exp.month === currentMonthName)
       )
       .reduce((acc, exp) => acc + exp.amount, 0);
-  }, [fixedExpenses, paidExpenses, currentMonthName]);
+  }, [fixedExpenses, paidExpensesThisMonth, currentMonthName]);
 
-  // If switch ON → deduct all fixed. If switch OFF → only deduct the ones marked as paid.
-  const total = totalExpenses + (includeFixed ? totalFixedExpensesThisMonth : totalFixedPaidThisMonth);
+  // Si incluye fijos, restamos el total de fijos menos los que ya pagamos (porque los pagados ya están sumados en totalExpenses)
+  const total = totalExpenses + (includeFixed ? (totalFixedExpensesThisMonth - totalFixedPaidThisMonth) : 0);
   const remaining = budget - total;
 
   const hasFixedExpenseToday = useMemo(() => fixedExpenses.some(exp =>
-    exp.day === today && (!exp.month || exp.month === 'Todos' || exp.month === currentMonthName) && !paidExpenses[exp.id]
-  ), [fixedExpenses, today, currentMonthName, paidExpenses]);
+    exp.day === today && (!exp.month || exp.month === 'Todos' || exp.month === currentMonthName) && !paidExpensesThisMonth[exp.id]
+  ), [fixedExpenses, today, currentMonthName, paidExpensesThisMonth]);
 
   let currentImg = '/snoopy_happy.png';
   let currentMsg = 'Snoopy está feliz.';
@@ -505,7 +522,7 @@ function App() {
           <div className="custom-scrollbar" style={{ maxHeight: '360px', overflowY: 'auto', marginBottom: '1rem', padding: '10px 15px 10px 5px', margin: '-10px -15px 0 -5px' }}>
             {fixedExpenses.map(exp => {
               const isToday = exp.day === today && (!exp.month || exp.month === 'Todos' || exp.month === currentMonthName);
-              const isPaid = !!paidExpenses[exp.id];
+              const isPaid = !!paidExpensesThisMonth[exp.id];
               return (
                 <div key={exp.id} className={`fixed-expense-item ${isToday ? 'active' : ''} ${isPaid ? 'paid' : ''}`}>
                   <div className="calendar-day">
